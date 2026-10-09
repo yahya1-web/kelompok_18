@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisis Jalan Rusak - WebGIS Capstone Kel 18</title>
+    
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        navy: '#0f172a',
+                        offwhite: '#f8fafc',
+                        accent: '#0d9488', 
+                        accentDark: '#0f766e',
+                        danger: '#ef4444',
+                        warning: '#f59e0b',
+                    },
+                    boxShadow: {
+                        'soft': '0 10px 40px -10px rgba(0,0,0,0.05)',
+                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body { background-color: #f8fafc; color: #0f172a; overflow-x: hidden; }
+        
+        .grid-bg {
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="antialiased selection:bg-accent selection:text-white">
+
+    <!-- 1. NAVBAR -->
+    <nav class="fixed w-full z-50 top-0 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center gap-4">
+                    <div class="w-11 h-11 bg-white rounded-lg shadow-sm border border-slate-100 flex items-center justify-center p-1">
+                        <img src="data/logo.jpeg" alt="Logo" class="w-full h-full object-contain">
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-extrabold text-accent tracking-[0.2em] uppercase">Capstone</span>
+                        <span class="text-sm font-bold text-navy tracking-tight">KELOMPOK 18</span>
+                    </div>
+                </div>
+
+                <div class="hidden lg:flex items-center space-x-6">
+                    <a href="#tentang" class="text-sm font-semibold text-slate-600 hover:text-accent transition-colors">Tentang</a>
+                    <a href="#tujuan" class="text-sm font-semibold text-slate-600 hover:text-accent transition-colors">Tujuan</a>
+                    <a href="#metode" class="text-sm font-semibold text-slate-600 hover:text-accent transition-colors">Metode</a>
+                    <a href="#hasil" class="text-sm font-semibold text-slate-600 hover:text-accent transition-colors">Hasil</a>
+                    <a href="#tim" class="text-sm font-semibold text-slate-600 hover:text-accent transition-colors">Tim</a>
+                </div>
+                
+                <div class="hidden lg:flex items-center">
+                    <a href="peta.html" class="bg-navy text-white px-6 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors shadow-sm">
+                        Buka WebGIS <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+                
+                <div class="lg:hidden flex items-center">
+                    <button class="text-slate-600 hover:text-navy p-2">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 2. HERO SECTION -->
+    <section class="relative pt-32 pb-20 lg:pt-40 lg:pb-24 overflow-hidden bg-white border-b border-slate-100">
+        <div class="absolute inset-0 grid-bg opacity-30 z-0"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                
+                <div>
+                    <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 text-xs font-bold text-slate-600 uppercase tracking-widest mb-6 rounded-md">
+                        <span class="w-2 h-2 rounded-full bg-accent"></span>
+                        GT25-32003
+                    </div>
+                    
+                    <span class="text-xs font-extrabold text-accent uppercase tracking-widest block mb-2">Capstone Design Kemah Kerja</span>
+                    <h1 class="text-2xl md:text-3xl lg:text-4xl font-extrabold text-navy leading-[1.3] mb-6 tracking-tight">
+                        "Analisis Akurasi Spasial Deteksi Kerusakan Jalan Berbasis Deep Learning dan Digitasi Manual Menggunakan Orthofoto dan Kamera Ponsel"
+                    </h1>
+                    
+                    <p class="text-sm md:text-base text-slate-600 mb-8 leading-relaxed max-w-lg">
+                        Platform WebGIS Kelompok 18 untuk memvisualisasikan, mengkomparasi, dan menganalisis tingkat keakuratan metode deteksi AI secara spasial.
+                    </p>
+                    
+                    <div class="flex flex-wrap items-center gap-4">
+                        <a href="peta.html" class="inline-flex items-center gap-2 px-6 py-3.5 bg-navy text-white text-sm font-bold rounded-lg hover:bg-slate-800 transition-colors shadow-md">
+                            Mulai Eksplorasi <i data-lucide="map" class="w-4 h-4"></i>
+                        </a>
+                        <a href="#hasil" class="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-navy border border-slate-300 text-sm font-bold rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
+                            Lihat Hasil
+                        </a>
+                    </div>
+                </div>
+
+                <div class="relative w-full rounded-2xl p-2 bg-slate-50 border border-slate-200 shadow-xl">
+                    <div class="w-full h-[300px] rounded-xl overflow-hidden relative">
+                        <div><img src="data/petahal1.png" alt=""></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. TENTANG CAPSTONE -->
+    <section id="tentang" class="py-20 bg-slate-50 border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-xs font-extrabold text-accent tracking-[0.2em] uppercase mb-2">Tentang Capstone</h2>
+                <h3 class="text-3xl font-bold text-navy">Inovasi Pemetaan Spasial</h3>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <p class="text-slate-600 text-lg leading-relaxed">
+                    Capstone ini mengembangkan WebGIS untuk mendukung analisis dan visualisasi kerusakan jalan berdasarkan data orthophoto. Metode deep learning digunakan untuk membantu proses identifikasi objek kerusakan jalan, kemudian hasil deteksi divisualisasikan secara spasial melalui WebGIS.
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4">
+                        <div class="p-2 bg-slate-50 rounded-lg text-accent shrink-0"><i data-lucide="image" class="w-5 h-5"></i></div>
+                        <div>
+                            <h4 class="font-bold text-navy text-sm mb-1">Orthophoto</h4>
+                            <p class="text-xs text-slate-500">Citra udara terkoreksi presisi</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4">
+                        <div class="p-2 bg-slate-50 rounded-lg text-blue-600 shrink-0"><i data-lucide="cpu" class="w-5 h-5"></i></div>
+                        <div>
+                            <h4 class="font-bold text-navy text-sm mb-1">AI Analysis</h4>
+                            <p class="text-xs text-slate-500">Deteksi Deep Learning otomatis</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4">
+                        <div class="p-2 bg-slate-50 rounded-lg text-danger shrink-0"><i data-lucide="scan" class="w-5 h-5"></i></div>
+                        <div>
+                            <h4 class="font-bold text-navy text-sm mb-1">Bounding Box</h4>
+                            <p class="text-xs text-slate-500">Ekstraksi anomali/kerusakan</p>
+                        </div>
+                    </div>
+                    <div class="bg-accent p-5 rounded-xl border border-accent shadow-sm flex items-start gap-4 text-white">
+                        <div class="p-2 bg-white/20 rounded-lg shrink-0"><i data-lucide="map" class="w-5 h-5"></i></div>
+                        <div>
+                            <h4 class="font-bold text-white text-sm mb-1">WebGIS</h4>
+                            <p class="text-xs text-white/80">Visualisasi data interaktif</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. TUJUAN & MANFAAT -->
+    <section id="tujuan" class="py-20 bg-white border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-xs font-extrabold text-accent tracking-[0.2em] uppercase mb-2">Signifikansi Proyek</h2>
+                <h3 class="text-3xl font-bold text-navy">Tujuan & Manfaat</h3>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-slate-50 p-8 rounded-2xl border border-slate-200">
+                    <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center text-accent shadow-sm mb-6">
+                        <i data-lucide="target" class="w-6 h-6"></i>
+                    </div>
+                    <h4 class="text-xl font-bold text-navy mb-6">Tujuan Utama</h4>
+                    <div class="space-y-6">
+                        <div class="flex gap-4 items-start">
+                            <i data-lucide="check-circle-2" class="w-5 h-5 text-accent shrink-0 mt-0.5"></i>
+                            <div>
+                                <h5 class="font-bold text-navy text-sm">Otomatisasi Deteksi Kerusakan</h5>
+                                <p class="text-sm text-slate-600 mt-1">Mengimplementasikan algoritma Deep Learning untuk mengenali jenis kerusakan jalan secara otomatis dari data citra udara.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 items-start">
+                            <i data-lucide="check-circle-2" class="w-5 h-5 text-accent shrink-0 mt-0.5"></i>
+                            <div>
+                                <h5 class="font-bold text-navy text-sm">Pemetaan Spasial Presisi</h5>
+                                <p class="text-sm text-slate-600 mt-1">Menyajikan hasil deteksi ke dalam platform WebGIS agar setiap titik kerusakan memiliki referensi koordinat geografis absolut.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-navy p-8 rounded-2xl shadow-lg text-white">
+                    <div class="w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center text-white mb-6">
+                        <i data-lucide="trending-up" class="w-6 h-6"></i>
+                    </div>
+                    <h4 class="text-xl font-bold text-white mb-6">Manfaat Praktis</h4>
+                    <div class="space-y-6">
+                        <div class="flex gap-4 items-start">
+                            <i data-lucide="clock" class="w-5 h-5 text-accent shrink-0 mt-0.5"></i>
+                            <div>
+                                <h5 class="font-bold text-white text-sm">Efisiensi Waktu & Tenaga</h5>
+                                <p class="text-sm text-slate-400 mt-1">Mengurangi drastis kebutuhan survei lapangan secara manual untuk mencatat kerusakan jalan desa.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 items-start">
+                            <i data-lucide="database" class="w-5 h-5 text-accent shrink-0 mt-0.5"></i>
+                            <div>
+                                <h5 class="font-bold text-white text-sm">Basis Data Terpusat</h5>
+                                <p class="text-sm text-slate-400 mt-1">Menyediakan database spasial bagi perangkat Desa Sidodadi dan Dinas PUPR Kabupaten Pesawaran.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 items-start">
+                            <i data-lucide="lightbulb" class="w-5 h-5 text-accent shrink-0 mt-0.5"></i>
+                            <div>
+                                <h5 class="font-bold text-white text-sm">Pengambilan Keputusan</h5>
+                                <p class="text-sm text-slate-400 mt-1">Membantu menentukan prioritas alokasi dana perbaikan infrastruktur jalan secara objektif.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. LOKASI PENELITIAN -->
+    <section id="lokasi" class="py-20 bg-slate-50 border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                
+                <div>
+                    <h2 class="text-xs font-extrabold text-accent tracking-[0.2em] uppercase mb-2">Wilayah Studi Kasus</h2>
+                    <h3 class="text-3xl font-bold text-navy mb-8">Desa Sidodadi, Teluk Pandan</h3>
+                    
+                    <div class="space-y-6">
+                        <div class="flex gap-4 items-start">
+                            <div class="p-3 bg-white rounded-lg shadow-sm border border-slate-200 text-slate-600 shrink-0"><i data-lucide="map" class="w-5 h-5"></i></div>
+                            <div>
+                                <h4 class="font-bold text-navy text-sm mb-1">Area Fokus Utama</h4>
+                                <p class="text-sm text-slate-600">Kecamatan teluk pandan, Kabupaten Pesawaran, Lampung sebagai representasi infrastruktur nyata.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 items-start">
+                            <div class="p-3 bg-white rounded-lg shadow-sm border border-slate-200 text-slate-600 shrink-0"><i data-lucide="plane" class="w-5 h-5"></i></div>
+                            <div>
+                                <h4 class="font-bold text-navy text-sm mb-1">Akuisisi Data Udara (UAV)</h4>
+                                <p class="text-sm text-slate-600">Pengambilan orthophoto resolusi tinggi menggunakan drone di wilayah desa sidodadi.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 items-start">
+                            <div class="p-3 bg-white rounded-lg shadow-sm border border-slate-200 text-slate-600 shrink-0"><i data-lucide="smartphone" class="w-5 h-5"></i></div>
+                            <div>
+                                <h4 class="font-bold text-navy text-sm mb-1">Validasi Kondisi Nyata</h4>
+                                <p class="text-sm text-slate-600">Jalan desa di Sidodadi memberikan variasi sampel kerusakan ideal (lubang & retak) untuk diuji coba.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="relative w-full h-[500px] rounded-2xl bg-white overflow-hidden shadow-card border border-slate-300">
+    
+    <!-- Ganti object-cover menjadi object-contain agar gambar tidak terpotong -->
+    <img src="data/peta.desa.jpg" alt="Peta Lokasi Desa Sidodadi" class="absolute inset-0 w-full h-full object-contain p-4 z-0">
+    
+    <!-- Overlay gelap tipis -->
+    <div class="absolute inset-0 bg-navy/5 z-10"></div>
+    
+    <!-- Pin Lokasi -->
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-20">
+        
+        </div>
+    </section>
+
+    <!-- 6. METODOLOGI -->
+    <section id="metode" class="py-20 bg-white border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-xs font-extrabold text-accent tracking-[0.2em] uppercase mb-2">Metodologi</h2>
+                <h3 class="text-3xl font-bold text-navy">Alur Kerja Sistem</h3>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 lg:gap-6">
+                <div class="bg-slate-50 rounded-xl border border-slate-200 p-6 flex flex-col items-center text-center">
+                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-4 text-slate-600 shadow-sm border border-slate-100"><i data-lucide="camera" class="w-5 h-5"></i></div>
+                    <span class="text-[11px] font-bold uppercase tracking-wide text-navy">1. Orthophoto</span>
+                </div>
+                
+                <div class="bg-slate-50 rounded-xl border border-slate-200 p-6 flex flex-col items-center text-center">
+                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-4 text-slate-600 shadow-sm border border-slate-100"><i data-lucide="database" class="w-5 h-5"></i></div>
+                    <span class="text-[11px] font-bold uppercase tracking-wide text-navy">2. Data Prep</span>
+                </div>
+
+                <div class="bg-navy rounded-xl shadow-md p-6 flex flex-col items-center text-center text-white col-span-2 md:col-span-1">
+                    <div class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mb-4 text-accent"><i data-lucide="brain-circuit" class="w-5 h-5"></i></div>
+                    <span class="text-[11px] font-bold uppercase tracking-wide">3. Deep Learning</span>
+                </div>
+
+                <div class="bg-slate-50 rounded-xl border border-slate-200 p-6 flex flex-col items-center text-center">
+                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-4 text-slate-600 shadow-sm border border-slate-100"><i data-lucide="crosshair" class="w-5 h-5"></i></div>
+                    <span class="text-[11px] font-bold uppercase tracking-wide text-navy">4. Detection</span>
+                </div>
+
+                <div class="bg-accent rounded-xl shadow-md p-6 flex flex-col items-center text-center text-white">
+                    <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4"><i data-lucide="map-pin" class="w-5 h-5"></i></div>
+                    <span class="text-[11px] font-bold uppercase tracking-wide">5. WebGIS</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 7. HASIL ANALISIS -->
+    <section id="hasil" class="py-20 bg-slate-50 border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-xs font-extrabold text-accent tracking-[0.2em] uppercase mb-2">Identifikasi AI</h2>
+                <h3 class="text-3xl font-bold text-navy">Hasil Deteksi Kerusakan</h3>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="h-48 bg-slate-200 relative">
+                        <img src="foto ponsel desa/IMG_2375.jpg" alt="Deteksi Jalan Berlubang" class="absolute inset-0 w-full h-full object-cover z-0">
+                        <div class="absolute inset-0 bg-navy/10"></div>
+                
+                        <div class="absolute top-3 right-3 bg-white px-3 py-1 font-bold text-navy text-[10px] rounded shadow-sm border border-slate-100">Akurasi:0.57 </div>
+                    </div>
+                    <div class="p-6 border-t border-slate-100">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-danger"></span>
+                            <h4 class="font-bold text-navy text-lg">Jalan Berlubang</h4>
+                        </div>
+                        <p class="text-sm text-slate-500 leading-relaxed">Kerusakan berlubang pada lapis permukaan aspal yang dapat membahayakan pengguna jalan.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="h-48 bg-slate-200 relative">
+                        <img src="foto ponsel prov/3edc3bdd-2670-4c2b-9e47-29670c1152fe (1).jpg" alt="Deteksi Jalan Berlubang" class="absolute inset-0 w-full h-full object-cover z-0">
+                        <div class="absolute inset-0 bg-navy/10"></div>
+                        
+                        <div class="absolute top-3 right-3 bg-white px-3 py-1 font-bold text-navy text-[10px] rounded shadow-sm border border-slate-100">Akurasi: 0.35</div>
+                    </div>
+                    <div class="p-6 border-t border-slate-100">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-warning"></span>
+                            <h4 class="font-bold text-navy text-lg">Jalan Retak</h4>
+                        </div>
+                        <p class="text-sm text-slate-500 leading-relaxed">Retak memanjang, melintang, atau retak pinggir (edge crack) pada struktur perkerasan jalan.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+   <!-- 8. TIM PENGEMBANG -->
+<section id="tim" class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-xs font-extrabold text-accent tracking-[0.2em] uppercase mb-2">Tim Pengembang</h2>
+        <h3 class="text-3xl font-bold text-navy mb-12">KELOMPOK 18</h3>
+        
+        <!-- ========================================== -->
+        <!-- BAGIAN DOSEN PEMBIMBING (KOTAK MELENGKUNG) -->
+        <!-- ========================================== -->
+        <div class="mb-14 flex justify-center">
+            <div class="bg-slate-50 p-6 rounded-2xl w-full max-w-sm border border-slate-200 flex flex-col items-center text-center">
+                
+                <!-- Foto Dosen (w-full h-40 dan rounded-xl) -->
+                <div class="w-full h-40 bg-white rounded-xl overflow-hidden mb-5 border border-slate-200 shadow-sm relative">
+                    <!-- Ingat untuk mengganti nama file fotonya -->
+                    <img src="data/ibu kiki.jpeg" alt="Rizky Aulia, S.T., M.T." class="absolute inset-0 w-full h-full object-cover">
+                </div>
+                
+                <div class="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.2em] mb-1">Dosen Pembimbing</div>
+                <div class="font-bold text-navy text-lg">Rizqi Aulia, S.T., M.T.</div>
+                <div class="text-sm font-semibold text-slate-500 mt-1">NIP. 199710042025062009</div>
+                
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- BAGIAN ANGGOTA TIM / MEMBER (BULAT)        -->
+        <!-- ========================================== -->
+        <div class="flex flex-wrap justify-center gap-10">
+            
+            <!-- Anggota 1 -->
+            <div class="flex flex-col items-center w-32">
+                <!-- Foto Member (w-20 h-20 dan rounded-full) -->
+                <div class="w-20 h-20 bg-slate-50 rounded-full overflow-hidden flex items-center justify-center mb-3 border border-slate-200 shadow-sm">
+                    <img src="data/gepa.jpeg" alt="Aria Diva Kusuma" class="w-full h-full object-cover">
+                </div>
+                <h4 class="font-bold text-navy text-sm leading-tight text-center mb-1">Aria Diva Kusuma</h4>
+                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider"></span>
+            </div>
+
+            <!-- Anggota 2 -->
+            <div class="flex flex-col items-center w-32">
+                <div class="w-20 h-20 bg-slate-50 rounded-full overflow-hidden flex items-center justify-center mb-3 border border-slate-200 shadow-sm">
+                    <img src="data/farel.jpeg" alt="Muhammad Farel Aryaguna" class="w-full h-full object-cover">
+                </div>
+                <h4 class="font-bold text-navy text-sm leading-tight text-center mb-1">Muhammad Farel Aryaguna</h4>
+                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Member</span>
+            </div>
+
+            <!-- Anggota 3 -->
+            <div class="flex flex-col items-center w-32">
+                <div class="w-20 h-20 bg-slate-50 rounded-full overflow-hidden flex items-center justify-center mb-3 border border-slate-200 shadow-sm">
+                    <img src="data/yahya.jpeg" alt="Muhammad Yahya Mufti" class="w-full h-full object-cover">
+                </div>
+                <h4 class="font-bold text-navy text-sm leading-tight text-center mb-1">Muhammad Yahya Mufti</h4>
+                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Member</span>
+            </div>
+
+            <!-- Anggota 4 -->
+            <div class="flex flex-col items-center w-32">
+                <div class="w-20 h-20 bg-slate-50 rounded-full overflow-hidden flex items-center justify-center mb-3 border border-slate-200 shadow-sm">
+                    <img src="data/alya.jpeg" alt="Alya Sari" class="w-full h-full object-cover">
+                </div>
+                <h4 class="font-bold text-navy text-sm leading-tight text-center mb-1">Alya Sari</h4>
+                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Member</span>
+            </div>
+
+            <!-- Anggota 5 -->
+            <div class="flex flex-col items-center w-32">
+                <div class="w-20 h-20 bg-slate-50 rounded-full overflow-hidden flex items-center justify-center mb-3 border border-slate-200 shadow-sm">
+                    <img src="data/sayu.jpeg" alt="Sayu Novita Sari" class="w-full h-full object-cover">
+                </div>
+                <h4 class="font-bold text-navy text-sm leading-tight text-center mb-1">Sayu Novita Sari</h4>
+                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Member</span>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+    <!-- 9. FOOTER -->
+    <footer class="bg-navy pt-16 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-8 mb-12 border-b border-slate-800 pb-12">
+                <div class="text-center md:text-left">
+                    <h2 class="text-2xl md:text-3xl font-bold text-white mb-3">Siap Menganalisis Spasial?</h2>
+                    <p class="text-slate-400 text-sm">Buka antarmuka WebGIS untuk memvisualisasikan data secara interaktif.</p>
+                </div>   
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-500">
+                <div>&copy; 2026 Kelompok 18 &mdash; Capstone Project</div>
+                <div class="flex gap-6">
+                    <span class="hover:text-white transition-colors cursor-pointer">Geospatial Technology</span>
+                    <span class="hover:text-white transition-colors cursor-pointer">Deep Learning</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Script Utama -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        lucide.createIcons();
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var map = L.map('hero-map', {
+                zoomControl: false,
+                scrollWheelZoom: false,
+                dragging: false,
+                doubleClickZoom: false,
+                attributionControl: false 
+            }).setView([-5.397140, 105.266789], 18);
+
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19
+            }).addTo(map);
+
+            var lubangStyle = {color: "#ef4444", weight: 3, fillOpacity: 0.15, fillcolor: "#ef4444"};
+            var retakstyle = {color: "#f59e0b", weight: 3, fillOpacity: 0.15, fillcolor: "#f59e0b"};
+
+            L.rectangle([[-5.3970, 105.2667], [-5.3971, 105.2668]], lubangStyle).addTo(map);
+            L.rectangle([[-5.3967, 105.2670], [-5.3966, 105.2671]], lubangStyle).addTo(map);
+            L.rectangle([[-5.3973, 105.2665], [-5.3972, 105.2666]], retakstyle).addTo(map);
+
+            var roadLine = [
+                [-5.3962, 105.2657],
+                [-5.3971, 105.2667],
+                [-5.3976, 105.2674]
+            ];
+            L.polyline(roadLine, {color: 'white', weight: 2, dashArray: '6, 6', opacity: 0.9}).addTo(map);
+        });
+    </script>
+</body>
+</html>
